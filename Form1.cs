@@ -30,10 +30,60 @@ namespace Murli_Clipper
             InitializeComponent();
         }
 
-        private void button1_Click(object sender, EventArgs e)
-        {
-            Debug.WriteLine("Clicked");
+        //Change to a tab
+        int currentTab = 0;
+        void changeToTab(int tabNumber) {
+            //Change to tab
+            currentTab = tabNumber;
+            tabControl1.SelectedTab = tabControl1.TabPages[tabNumber];
+        }
 
+        private void tabChanged(object sender, TabControlCancelEventArgs e)
+        {
+            //Check if it is the selected tab
+            if (e.TabPageIndex != currentTab)
+            {
+                e.Cancel = true;
+            }
+        }
+
+        //Validate srcPath
+        void validateSrcPath() {
+            //Check if file exists
+            if (File.Exists(srcPath.Text) && System.IO.Path.GetExtension(srcPath.Text) == ".pdf") {
+                srcValidity.Text = "Path Is Valid";
+                srcValidity.ForeColor = Color.Green;
+            }
+            else
+            {
+                srcValidity.Text = "Not a Valid Path";
+                srcValidity.ForeColor = Color.Red;
+            }
+        }
+
+        private void step1Done(object sender, EventArgs e)
+        {
+            //Next tab
+            changeToTab(currentTab + 1);
+        }
+
+        //Open source dialog;
+        OpenFileDialog srcDialog = new OpenFileDialog();
+        private void srcDialogClicked(object sender, EventArgs e)
+        {
+            srcDialog.Filter = "Pdf Files (*.pdf)|*.pdf|All files (*.*)|*.*";
+            if (srcDialog.ShowDialog() == DialogResult.OK) {
+                srcPath.Text = srcDialog.FileName;
+                validateSrcPath();
+            }
+        }
+
+        private void srcPathChanged(object sender, EventArgs e)
+        {
+            validateSrcPath();
+        }
+
+<<<<<<< Updated upstream
             var localGhostscriptDll = System.IO.Path.Combine(Environment.CurrentDirectory, Environment.Is64BitProcess ? "gsdll64.dll" : "gsdll32.dll");
             var localDllInfo = new GhostscriptVersionInfo(localGhostscriptDll);
 
@@ -59,27 +109,59 @@ namespace Murli_Clipper
             const string FOX = "C:/Users/rajas/Desktop/Test Murlis/fox.png";
             ImageData fox = ImageDataFactory.Create(FOX);
             
+=======
+        /*Crop an image
+        const string src = "C:/Users/rajas/Desktop/Test Murlis/image.png";
+        const string dest = "C:/Users/rajas/Desktop/Test Murlis/cropped.png";
 
-            const string dest = "C:/Users/rajas/Desktop/Test Murlis/test.pdf";
-            var writer = new PdfWriter(dest);
-            var pdf = new PdfDocument(writer);
+        System.Drawing.Image img = System.Drawing.Image.FromFile(src);
+        Bitmap bmpImage = new Bitmap(img);
+        Bitmap bmpCrop = bmpImage.Clone(new System.Drawing.Rectangle(100, 100, 300, 300), bmpImage.PixelFormat);
 
-            PdfPage page = pdf.AddNewPage(PageSize.A4.Rotate());
+        bmpCrop.Save(dest);*/
 
-            PdfCanvas canvas = new PdfCanvas(page);
+        /*Get an image from 1 page of pdf
+        int desired_x_dpi = 400;
+        int desired_y_dpi = 400;
 
-            double wr = page.GetPageSize().GetWidth() / fox.GetWidth();
+        const string src = "C:/Users/rajas/Desktop/Test Murlis/og.pdf";
+        const string dest = "C:/Users/rajas/Desktop/Test Murlis/image.png";
 
-            double hr = page.GetPageSize().GetHeight() / fox.GetHeight();
+        //Get image from pdf
+        GhostscriptPngDevice dev = new GhostscriptPngDevice(GhostscriptPngDeviceType.PngGray);
+        dev.GraphicsAlphaBits = GhostscriptImageDeviceAlphaBits.V_4;
+        dev.TextAlphaBits = GhostscriptImageDeviceAlphaBits.V_4;
+        dev.ResolutionXY = new GhostscriptImageDeviceResolution(desired_x_dpi, desired_y_dpi);
+        dev.InputFiles.Add(src);
+        dev.Pdf.FirstPage = 1;
+        dev.Pdf.LastPage = 1;
+        dev.CustomSwitches.Add("-dDOINTERPOLATE");
+        dev.OutputPath = dest;
+        dev.Process();*/
 
             AffineTransform transformationMatrix = AffineTransform.GetScaleInstance(Math.Min(wr,hr), Math.Min(wr,hr));
             canvas.ConcatMatrix(transformationMatrix);
 
-            canvas.AddImage(fox, 0, 0, false);
-            canvas.AddImage(fox, 0, fox.GetHeight(), false);
 
-            pdf.Close();
-            Process.Start(dest);*/
-        }
+        const string dest = "C:/Users/rajas/Desktop/Test Murlis/test.pdf";
+        var writer = new PdfWriter(dest);
+        var pdf = new PdfDocument(writer);
+
+        PdfPage page = pdf.AddNewPage(PageSize.A4.Rotate());
+
+        PdfCanvas canvas = new PdfCanvas(page);
+
+        double wr = page.GetPageSize().GetWidth() / fox.GetWidth();
+
+        double hr = page.GetPageSize().GetHeight() / fox.GetHeight();
+
+        AffineTransform transformationMatrix = AffineTransform.GetScaleInstance(Math.Min(wr,hr), Math.Min(wr,hr));
+        canvas.ConcatMatrix(transformationMatrix);
+
+        canvas.AddImage(fox, 0, 0, false);
+        canvas.AddImage(fox, 0, fox.GetHeight(), false);
+
+        pdf.Close();
+        Process.Start(dest);*/
     }
 }
