@@ -84,7 +84,13 @@ namespace Murli_Clipper
         {
             validateSrcPath();
         }
-        
+
+        private void step2Done(object sender, EventArgs e)
+        {
+            //Next tab
+            changeToTab(currentTab + 1);
+        }
+
         /*Crop an image
         const string src = "C:/Users/rajas/Desktop/Test Murlis/image.png";
         const string dest = "C:/Users/rajas/Desktop/Test Murlis/cropped.png";
