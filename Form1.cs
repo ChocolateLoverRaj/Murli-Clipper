@@ -34,27 +34,35 @@ namespace Murli_Clipper
         {
             Debug.WriteLine("Clicked");
 
-            var localGhostscriptDll = System.IO.Path.Combine(Environment.CurrentDirectory, Environment.Is64BitProcess ? "gsdll64.dll" : "gsdll32.dll");
-            var localDllInfo = new GhostscriptVersionInfo(localGhostscriptDll);
+            /*Crop an image
+            const string src = "C:/Users/rajas/Desktop/Test Murlis/image.png";
+            const string dest = "C:/Users/rajas/Desktop/Test Murlis/cropped.png";
 
-            int desired_x_dpi = 96;
-            int desired_y_dpi = 96;
+            System.Drawing.Image img = System.Drawing.Image.FromFile(src);
+            Bitmap bmpImage = new Bitmap(img);
+            Bitmap bmpCrop = bmpImage.Clone(new System.Drawing.Rectangle(100, 100, 300, 300), bmpImage.PixelFormat);
+
+            bmpCrop.Save(dest);*/
+
+            /*Get an image from 1 page of pdf
+            int desired_x_dpi = 400;
+            int desired_y_dpi = 400;
 
             const string src = "C:/Users/rajas/Desktop/Test Murlis/og.pdf";
-            const string dest = "C:/Users/rajas/Desktop/Test Murlis/image";
+            const string dest = "C:/Users/rajas/Desktop/Test Murlis/image.png";
 
             //Get image from pdf
-            GhostscriptRasterizer rasterizer = new GhostscriptRasterizer();
+            GhostscriptPngDevice dev = new GhostscriptPngDevice(GhostscriptPngDeviceType.PngGray);
+            dev.GraphicsAlphaBits = GhostscriptImageDeviceAlphaBits.V_4;
+            dev.TextAlphaBits = GhostscriptImageDeviceAlphaBits.V_4;
+            dev.ResolutionXY = new GhostscriptImageDeviceResolution(desired_x_dpi, desired_y_dpi);
+            dev.InputFiles.Add(src);
+            dev.Pdf.FirstPage = 1;
+            dev.Pdf.LastPage = 1;
+            dev.CustomSwitches.Add("-dDOINTERPOLATE");
+            dev.OutputPath = dest;
+            dev.Process();*/
 
-            rasterizer.Open(src);
-
-            //Get the first page
-            System.Drawing.Image image = rasterizer.GetPage(desired_x_dpi, desired_y_dpi, 0);
-
-            rasterizer.Close();
-
-            image.Save(dest, ImageFormat.Png);
-            
             /*Initialize PDF writer
             const string FOX = "C:/Users/rajas/Desktop/Test Murlis/fox.png";
             ImageData fox = ImageDataFactory.Create(FOX);
