@@ -53,11 +53,13 @@ namespace Murli_Clipper
             if (File.Exists(srcPath.Text) && System.IO.Path.GetExtension(srcPath.Text) == ".pdf") {
                 srcValidity.Text = "Path Is Valid";
                 srcValidity.ForeColor = Color.Green;
+                step1Next.Enabled = true;
             }
             else
             {
                 srcValidity.Text = "Not a Valid Path";
                 srcValidity.ForeColor = Color.Red;
+                step1Next.Enabled = false;
             }
         }
 
