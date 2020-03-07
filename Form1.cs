@@ -82,34 +82,7 @@ namespace Murli_Clipper
         {
             validateSrcPath();
         }
-
-<<<<<<< Updated upstream
-            var localGhostscriptDll = System.IO.Path.Combine(Environment.CurrentDirectory, Environment.Is64BitProcess ? "gsdll64.dll" : "gsdll32.dll");
-            var localDllInfo = new GhostscriptVersionInfo(localGhostscriptDll);
-
-            int desired_x_dpi = 96;
-            int desired_y_dpi = 96;
-
-            const string src = "C:/Users/rajas/Desktop/Test Murlis/og.pdf";
-            const string dest = "C:/Users/rajas/Desktop/Test Murlis/image";
-
-            //Get image from pdf
-            GhostscriptRasterizer rasterizer = new GhostscriptRasterizer();
-
-            rasterizer.Open(src);
-
-            //Get the first page
-            System.Drawing.Image image = rasterizer.GetPage(desired_x_dpi, desired_y_dpi, 0);
-
-            rasterizer.Close();
-
-            image.Save(dest, ImageFormat.Png);
-            
-            /*Initialize PDF writer
-            const string FOX = "C:/Users/rajas/Desktop/Test Murlis/fox.png";
-            ImageData fox = ImageDataFactory.Create(FOX);
-            
-=======
+        
         /*Crop an image
         const string src = "C:/Users/rajas/Desktop/Test Murlis/image.png";
         const string dest = "C:/Users/rajas/Desktop/Test Murlis/cropped.png";
@@ -139,11 +112,12 @@ namespace Murli_Clipper
         dev.OutputPath = dest;
         dev.Process();*/
 
-            AffineTransform transformationMatrix = AffineTransform.GetScaleInstance(Math.Min(wr,hr), Math.Min(wr,hr));
-            canvas.ConcatMatrix(transformationMatrix);
-
+        /*Initialize PDF writer
+        const string FOX = "C:/Users/rajas/Desktop/Test Murlis/fox.png";
+        ImageData fox = ImageDataFactory.Create(FOX);
 
         const string dest = "C:/Users/rajas/Desktop/Test Murlis/test.pdf";
+
         var writer = new PdfWriter(dest);
         var pdf = new PdfDocument(writer);
 
