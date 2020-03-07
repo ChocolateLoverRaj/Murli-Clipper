@@ -25,9 +25,18 @@ namespace Murli_Clipper
 {
     public partial class Form1 : System.Windows.Forms.Form
     {
+        string tempPath = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "./temp");
+
         public Form1()
         {
             InitializeComponent();
+
+            //Delete old temporary files
+            string[] files = Directory.GetFiles(tempPath);
+            for(var i = 0; i < files.Length; i++)
+            {
+                File.Delete(files[i]);
+            }
         }
 
         //Change to a tab
@@ -47,13 +56,45 @@ namespace Murli_Clipper
             }
         }
 
+        //Open source dialog;
+        OpenFileDialog srcDialog = new OpenFileDialog();
+        private void srcDialogClicked(object sender, EventArgs e)
+        {
+            srcDialog.Filter = "Pdf Files (*.pdf)|*.pdf|All files (*.*)|*.*";
+            if (srcDialog.ShowDialog() == DialogResult.OK)
+            {
+                srcPath.Text = srcDialog.FileName;
+                validateSrcPath();
+            }
+        }
+
+        private void srcPathChanged(object sender, EventArgs e)
+        {
+            validateSrcPath();
+        }
+
         //Validate srcPath
+        PdfReader reader;
+        PdfDocument document;
         void validateSrcPath() {
             //Check if file exists
             if (File.Exists(srcPath.Text) && System.IO.Path.GetExtension(srcPath.Text) == ".pdf") {
-                srcValidity.Text = "Path Is Valid";
-                srcValidity.ForeColor = Color.Green;
-                step1Next.Enabled = true;
+                //Check if pdf has 21 pages
+                reader = new PdfReader(srcPath.Text);
+                document = new PdfDocument(reader);
+
+                if (document.GetNumberOfPages() == 21)
+                {
+                    srcValidity.Text = "Path Is Valid";
+                    srcValidity.ForeColor = Color.Green;
+                    step1Next.Enabled = true;
+                }
+                else
+                {
+                    srcValidity.Text = "Pdf Doesn't Have 21 Pages";
+                    srcValidity.ForeColor = Color.Red;
+                    step1Next.Enabled = false;
+                }
             }
             else
             {
@@ -67,22 +108,6 @@ namespace Murli_Clipper
         {
             //Next tab
             changeToTab(currentTab + 1);
-        }
-
-        //Open source dialog;
-        OpenFileDialog srcDialog = new OpenFileDialog();
-        private void srcDialogClicked(object sender, EventArgs e)
-        {
-            srcDialog.Filter = "Pdf Files (*.pdf)|*.pdf|All files (*.*)|*.*";
-            if (srcDialog.ShowDialog() == DialogResult.OK) {
-                srcPath.Text = srcDialog.FileName;
-                validateSrcPath();
-            }
-        }
-
-        private void srcPathChanged(object sender, EventArgs e)
-        {
-            validateSrcPath();
         }
 
         private void step2Done(object sender, EventArgs e)
