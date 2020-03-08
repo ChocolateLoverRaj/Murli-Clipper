@@ -20,6 +20,7 @@ using iText.Kernel.Pdf.Canvas;
 using Ghostscript.NET.Rasterizer;
 using Ghostscript.NET;
 using System.Drawing.Imaging;
+using System.Drawing.Drawing2D;
 
 namespace Murli_Clipper
 {
@@ -37,10 +38,13 @@ namespace Murli_Clipper
             {
                 File.Delete(files[i]);
             }
+
+            changeToTab(3);
+            startStep4();
         }
 
         //Change to a tab
-        int currentTab = 0;
+        private int currentTab = 0;
         private void changeToTab(int tabNumber)
         {
             //Change to tab
@@ -128,7 +132,6 @@ namespace Murli_Clipper
         private const int y_dpi = 400;
         private GhostscriptImageDeviceResolution resolution = new GhostscriptImageDeviceResolution(x_dpi, y_dpi);
         GhostscriptPngDevice device = new GhostscriptPngDevice(GhostscriptPngDeviceType.PngGray);
-        private Bitmap[] bitmaps = new Bitmap[14];
 
         private void startStep3()
         {
@@ -139,36 +142,15 @@ namespace Murli_Clipper
             device.CustomSwitches.Add("-dDOINTERPOLATE");
 
             int photosSaved = 0;
-            string path;
-            Bitmap bitmap;
-            System.Drawing.Rectangle rectangle;
-            System.Drawing.Image image;
             for (int i = 0; i < 7; i++)
             {
                 for (int j = 0; j < 2; j++)
                 {
-                    //Calculate path
-                    path = System.IO.Path.Combine(tempPath, "./" + i + (j == 0 ? "A" : "B") + ".png");
-
                     //Get photo
-                    device.OutputPath = path;
+                    device.OutputPath = System.IO.Path.Combine(tempPath, "./" + i + (j == 0 ? "A" : "B") + ".png");
                     device.Pdf.FirstPage = i * 3 + j * 2 + 1;
                     device.Pdf.LastPage = i * 3 + j * 2 + 1;
                     device.Process();
-
-                    //Split photo in half
-                    image = System.Drawing.Image.FromFile(path);
-                    bitmap = new Bitmap(image);
-                    if (j == 0)
-                    {
-                        rectangle = new System.Drawing.Rectangle(0, 0, bitmap.Width, bitmap.Height / 2);
-                    }
-                    else
-                    {
-                        rectangle = new System.Drawing.Rectangle(0, bitmap.Height / 2, bitmap.Width, bitmap.Height / 2);
-                    }
-                    bitmap = bitmap.Clone(rectangle, bitmap.PixelFormat);
-                    bitmaps[photosSaved] = bitmap;
 
                     //Update display
                     photosSaved++;
@@ -179,7 +161,89 @@ namespace Murli_Clipper
                 }
             }
 
-            bitmaps[0].Save(tempPath + "/cropped.png");
+            //Next tab
+            changeToTab(currentTab + 1);
+            //Update
+            tabControl1.Update();
+            //Start step 4
+            startStep4();
+        }
+
+        private int leftMarginX = 0;
+        private int leftMarginXMin = 0;
+        private int leftMarginXMax;
+        private GraphicsPath graphicsPath = new GraphicsPath();
+        private System.Drawing.Point[] leftTabPoints;
+        private SolidBrush tabBrush = new SolidBrush(Color.Blue);
+        private Pen splitterPen = new Pen(Color.Blue);
+        private bool leftTabMouseDown = false;
+        private void startStep4() {
+            leftMarginXMax = marginPicture.Width / 4;
+        }
+
+        private void cropPaint(object sender, PaintEventArgs e)
+        {
+            Graphics g = e.Graphics;
+            //Left tab
+            graphicsPath = new GraphicsPath();
+            leftTabPoints = new System.Drawing.Point[]{
+                new System.Drawing.Point(leftMarginX - 10, 0),
+                new System.Drawing.Point(leftMarginX - 10, 10),
+                new System.Drawing.Point(leftMarginX, 20),
+                new System.Drawing.Point(leftMarginX + 10, 10),
+                new System.Drawing.Point(leftMarginX + 10, 0)
+            };
+            graphicsPath.AddPolygon(leftTabPoints);
+            //Left tab
+            g.FillPath(tabBrush, graphicsPath);
+            //Cutter Line
+            g.DrawLine(splitterPen, leftMarginX, 20, leftMarginX, marginPicture.Height);
+        }
+
+        private void cropMouseDown(object sender, MouseEventArgs e)
+        {
+            if (graphicsPath.IsVisible(e.Location))
+            {
+                leftTabMouseDown = true;
+            }
+        }
+
+        private void cropMouseUp(object sender, MouseEventArgs e)
+        {
+            leftTabMouseDown = false;
+        }
+
+        private void cropMouseMoved(object sender, MouseEventArgs e)
+        {
+            //Update cursor
+            if(graphicsPath.IsVisible(e.Location))
+            {
+                marginPicture.Cursor = Cursors.Hand;
+            }
+            else
+            {
+                marginPicture.Cursor = Cursors.Default;
+            }
+            //Check if position was changed and it is a valid position
+            if(leftTabMouseDown && e.X != leftMarginX)
+            {
+                //Update position
+                if(e.X < leftMarginXMin)
+                {
+                    leftMarginX = leftMarginXMin;
+                }
+                else if(e.X > leftMarginXMax)
+                {
+                    leftMarginX = leftMarginXMax;
+                }
+                else
+                {
+                    leftMarginX = e.X;
+                }
+                //Redraw
+                marginPicture.Refresh();
+
+            }
         }
 
         /*Crop an image
