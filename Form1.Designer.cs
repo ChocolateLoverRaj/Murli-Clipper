@@ -39,12 +39,16 @@
             this.step2Next = new System.Windows.Forms.Button();
             this.label2 = new System.Windows.Forms.Label();
             this.dateTimePicker1 = new System.Windows.Forms.DateTimePicker();
+            this.step3 = new System.Windows.Forms.TabPage();
+            this.step3Label = new System.Windows.Forms.Label();
+            this.step3ProgressBar = new System.Windows.Forms.ProgressBar();
+            this.label3 = new System.Windows.Forms.Label();
             this.step4 = new System.Windows.Forms.TabPage();
             this.step5 = new System.Windows.Forms.TabPage();
-            this.step3 = new System.Windows.Forms.TabPage();
             this.tabControl1.SuspendLayout();
             this.step1.SuspendLayout();
             this.step2.SuspendLayout();
+            this.step3.SuspendLayout();
             this.SuspendLayout();
             // 
             // tabControl1
@@ -58,9 +62,9 @@
             this.tabControl1.Location = new System.Drawing.Point(12, 12);
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
-            this.tabControl1.Size = new System.Drawing.Size(547, 254);
+            this.tabControl1.Size = new System.Drawing.Size(585, 254);
             this.tabControl1.TabIndex = 1;
-            this.tabControl1.Selecting += new System.Windows.Forms.TabControlCancelEventHandler(this.tabChanged);
+            this.tabControl1.Selecting += new System.Windows.Forms.TabControlCancelEventHandler(this.tabChangeAttempted);
             // 
             // step1
             // 
@@ -71,7 +75,7 @@
             this.step1.Controls.Add(this.label1);
             this.step1.Location = new System.Drawing.Point(4, 25);
             this.step1.Name = "step1";
-            this.step1.Size = new System.Drawing.Size(539, 225);
+            this.step1.Size = new System.Drawing.Size(577, 225);
             this.step1.TabIndex = 0;
             this.step1.Text = "Select PDF";
             this.step1.UseVisualStyleBackColor = true;
@@ -133,7 +137,7 @@
             this.step2.Controls.Add(this.dateTimePicker1);
             this.step2.Location = new System.Drawing.Point(4, 25);
             this.step2.Name = "step2";
-            this.step2.Size = new System.Drawing.Size(539, 225);
+            this.step2.Size = new System.Drawing.Size(577, 225);
             this.step2.TabIndex = 1;
             this.step2.Text = "Select Date";
             this.step2.UseVisualStyleBackColor = true;
@@ -170,11 +174,53 @@
             this.dateTimePicker1.TabIndex = 0;
             this.dateTimePicker1.Value = new System.DateTime(2020, 3, 7, 12, 14, 25, 0);
             // 
+            // step3
+            // 
+            this.step3.Controls.Add(this.step3Label);
+            this.step3.Controls.Add(this.step3ProgressBar);
+            this.step3.Controls.Add(this.label3);
+            this.step3.Location = new System.Drawing.Point(4, 25);
+            this.step3.Name = "step3";
+            this.step3.Size = new System.Drawing.Size(577, 225);
+            this.step3.TabIndex = 4;
+            this.step3.Text = "Generate Images";
+            this.step3.UseVisualStyleBackColor = true;
+            // 
+            // step3Label
+            // 
+            this.step3Label.AutoSize = true;
+            this.step3Label.Font = new System.Drawing.Font("Microsoft Sans Serif", 18F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.step3Label.ForeColor = System.Drawing.Color.Green;
+            this.step3Label.Location = new System.Drawing.Point(10, 179);
+            this.step3Label.Name = "step3Label";
+            this.step3Label.Size = new System.Drawing.Size(408, 36);
+            this.step3Label.TabIndex = 2;
+            this.step3Label.Text = "0 out of 14 images generated.";
+            // 
+            // step3ProgressBar
+            // 
+            this.step3ProgressBar.Location = new System.Drawing.Point(16, 77);
+            this.step3ProgressBar.Maximum = 14;
+            this.step3ProgressBar.Name = "step3ProgressBar";
+            this.step3ProgressBar.Size = new System.Drawing.Size(526, 99);
+            this.step3ProgressBar.TabIndex = 1;
+            // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.Font = new System.Drawing.Font("Microsoft Sans Serif", 36F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label3.ForeColor = System.Drawing.SystemColors.MenuHighlight;
+            this.label3.Location = new System.Drawing.Point(4, 4);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(538, 69);
+            this.label3.TabIndex = 0;
+            this.label3.Text = "Generating Images";
+            // 
             // step4
             // 
             this.step4.Location = new System.Drawing.Point(4, 25);
             this.step4.Name = "step4";
-            this.step4.Size = new System.Drawing.Size(539, 225);
+            this.step4.Size = new System.Drawing.Size(577, 225);
             this.step4.TabIndex = 2;
             this.step4.Text = "Crop PDF";
             this.step4.UseVisualStyleBackColor = true;
@@ -183,25 +229,16 @@
             // 
             this.step5.Location = new System.Drawing.Point(4, 25);
             this.step5.Name = "step5";
-            this.step5.Size = new System.Drawing.Size(539, 225);
+            this.step5.Size = new System.Drawing.Size(577, 225);
             this.step5.TabIndex = 3;
             this.step5.Text = "Create PDF";
             this.step5.UseVisualStyleBackColor = true;
-            // 
-            // step3
-            // 
-            this.step3.Location = new System.Drawing.Point(4, 25);
-            this.step3.Name = "step3";
-            this.step3.Size = new System.Drawing.Size(539, 225);
-            this.step3.TabIndex = 4;
-            this.step3.Text = "Generate Images";
-            this.step3.UseVisualStyleBackColor = true;
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(567, 273);
+            this.ClientSize = new System.Drawing.Size(601, 273);
             this.Controls.Add(this.tabControl1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.Fixed3D;
             this.MaximizeBox = false;
@@ -212,6 +249,8 @@
             this.step1.PerformLayout();
             this.step2.ResumeLayout(false);
             this.step2.PerformLayout();
+            this.step3.ResumeLayout(false);
+            this.step3.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -231,6 +270,9 @@
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Button step2Next;
         private System.Windows.Forms.TabPage step3;
+        private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.ProgressBar step3ProgressBar;
+        private System.Windows.Forms.Label step3Label;
     }
 }
 

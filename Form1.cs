@@ -25,7 +25,7 @@ namespace Murli_Clipper
 {
     public partial class Form1 : System.Windows.Forms.Form
     {
-        string tempPath = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "./temp");
+        private string tempPath = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "./temp");
 
         public Form1()
         {
@@ -33,7 +33,7 @@ namespace Murli_Clipper
 
             //Delete old temporary files
             string[] files = Directory.GetFiles(tempPath);
-            for(var i = 0; i < files.Length; i++)
+            for (var i = 0; i < files.Length; i++)
             {
                 File.Delete(files[i]);
             }
@@ -41,13 +41,14 @@ namespace Murli_Clipper
 
         //Change to a tab
         int currentTab = 0;
-        void changeToTab(int tabNumber) {
+        private void changeToTab(int tabNumber)
+        {
             //Change to tab
             currentTab = tabNumber;
             tabControl1.SelectedTab = tabControl1.TabPages[tabNumber];
         }
 
-        private void tabChanged(object sender, TabControlCancelEventArgs e)
+        private void tabChangeAttempted(object sender, TabControlCancelEventArgs e)
         {
             //Check if it is the selected tab
             if (e.TabPageIndex != currentTab)
@@ -57,7 +58,7 @@ namespace Murli_Clipper
         }
 
         //Open source dialog;
-        OpenFileDialog srcDialog = new OpenFileDialog();
+        private OpenFileDialog srcDialog = new OpenFileDialog();
         private void srcDialogClicked(object sender, EventArgs e)
         {
             srcDialog.Filter = "Pdf Files (*.pdf)|*.pdf|All files (*.*)|*.*";
@@ -74,11 +75,13 @@ namespace Murli_Clipper
         }
 
         //Validate srcPath
-        PdfReader reader;
-        PdfDocument document;
-        void validateSrcPath() {
+        private PdfReader reader;
+        private PdfDocument document;
+        private void validateSrcPath()
+        {
             //Check if file exists
-            if (File.Exists(srcPath.Text) && System.IO.Path.GetExtension(srcPath.Text) == ".pdf") {
+            if (File.Exists(srcPath.Text) && System.IO.Path.GetExtension(srcPath.Text) == ".pdf")
+            {
                 //Check if pdf has 21 pages
                 reader = new PdfReader(srcPath.Text);
                 document = new PdfDocument(reader);
@@ -114,6 +117,69 @@ namespace Murli_Clipper
         {
             //Next tab
             changeToTab(currentTab + 1);
+            //Update
+            tabControl1.Update();
+            //Start step 3
+            startStep3();
+        }
+
+        //Start generating images
+        private const int x_dpi = 400;
+        private const int y_dpi = 400;
+        private GhostscriptImageDeviceResolution resolution = new GhostscriptImageDeviceResolution(x_dpi, y_dpi);
+        GhostscriptPngDevice device = new GhostscriptPngDevice(GhostscriptPngDeviceType.PngGray);
+        private Bitmap[] bitmaps = new Bitmap[14];
+
+        private void startStep3()
+        {
+            device.GraphicsAlphaBits = GhostscriptImageDeviceAlphaBits.V_4;
+            device.TextAlphaBits = GhostscriptImageDeviceAlphaBits.V_4;
+            device.ResolutionXY = resolution;
+            device.InputFiles.Add(srcPath.Text);
+            device.CustomSwitches.Add("-dDOINTERPOLATE");
+
+            int photosSaved = 0;
+            string path;
+            Bitmap bitmap;
+            System.Drawing.Rectangle rectangle;
+            System.Drawing.Image image;
+            for (int i = 0; i < 7; i++)
+            {
+                for (int j = 0; j < 2; j++)
+                {
+                    //Calculate path
+                    path = System.IO.Path.Combine(tempPath, "./" + i + (j == 0 ? "A" : "B") + ".png");
+
+                    //Get photo
+                    device.OutputPath = path;
+                    device.Pdf.FirstPage = i * 3 + j * 2 + 1;
+                    device.Pdf.LastPage = i * 3 + j * 2 + 1;
+                    device.Process();
+
+                    //Split photo in half
+                    image = System.Drawing.Image.FromFile(path);
+                    bitmap = new Bitmap(image);
+                    if (j == 0)
+                    {
+                        rectangle = new System.Drawing.Rectangle(0, 0, bitmap.Width, bitmap.Height / 2);
+                    }
+                    else
+                    {
+                        rectangle = new System.Drawing.Rectangle(0, bitmap.Height / 2, bitmap.Width, bitmap.Height / 2);
+                    }
+                    bitmap = bitmap.Clone(rectangle, bitmap.PixelFormat);
+                    bitmaps[photosSaved] = bitmap;
+
+                    //Update display
+                    photosSaved++;
+                    step3ProgressBar.Value = photosSaved;
+                    step3Label.Text = photosSaved + " out of 14 images generated.";
+                    step3ProgressBar.Update();
+                    step3Label.Update();
+                }
+            }
+
+            bitmaps[0].Save(tempPath + "/cropped.png");
         }
 
         /*Crop an image
