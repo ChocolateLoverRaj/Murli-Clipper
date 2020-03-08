@@ -48,6 +48,7 @@
             this.marginPicture = new System.Windows.Forms.PictureBox();
             this.label4 = new System.Windows.Forms.Label();
             this.step5 = new System.Windows.Forms.TabPage();
+            this.step4Next = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.step1.SuspendLayout();
             this.step2.SuspendLayout();
@@ -228,6 +229,7 @@
             // 
             // step4
             // 
+            this.step4.Controls.Add(this.step4Next);
             this.step4.Controls.Add(this.marginPicture);
             this.step4.Controls.Add(this.label4);
             this.step4.Location = new System.Drawing.Point(4, 25);
@@ -241,17 +243,17 @@
             // 
             this.marginPicture.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.marginPicture.Image = ((System.Drawing.Image)(resources.GetObject("marginPicture.Image")));
-            this.marginPicture.Location = new System.Drawing.Point(513, 4);
+            this.marginPicture.Location = new System.Drawing.Point(504, 4);
             this.marginPicture.Name = "marginPicture";
             this.marginPicture.Size = new System.Drawing.Size(636, 695);
             this.marginPicture.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.marginPicture.TabIndex = 1;
             this.marginPicture.TabStop = false;
             this.marginPicture.WaitOnLoad = true;
-            this.marginPicture.Paint += new System.Windows.Forms.PaintEventHandler(this.cropPaint);
-            this.marginPicture.MouseDown += new System.Windows.Forms.MouseEventHandler(this.cropMouseDown);
-            this.marginPicture.MouseMove += new System.Windows.Forms.MouseEventHandler(this.cropMouseMoved);
-            this.marginPicture.MouseUp += new System.Windows.Forms.MouseEventHandler(this.cropMouseUp);
+            this.marginPicture.Paint += new System.Windows.Forms.PaintEventHandler(this.marginPaint);
+            this.marginPicture.MouseDown += new System.Windows.Forms.MouseEventHandler(this.marginMouseDown);
+            this.marginPicture.MouseMove += new System.Windows.Forms.MouseEventHandler(this.marginMouseMoved);
+            this.marginPicture.MouseUp += new System.Windows.Forms.MouseEventHandler(this.marginMouseUp);
             // 
             // label4
             // 
@@ -272,6 +274,17 @@
             this.step5.TabIndex = 3;
             this.step5.Text = "Create PDF";
             this.step5.UseVisualStyleBackColor = true;
+            // 
+            // step4Next
+            // 
+            this.step4Next.Font = new System.Drawing.Font("Microsoft Sans Serif", 72F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.step4Next.Location = new System.Drawing.Point(10, 44);
+            this.step4Next.Name = "step4Next";
+            this.step4Next.Size = new System.Drawing.Size(488, 655);
+            this.step4Next.TabIndex = 2;
+            this.step4Next.Text = "Next";
+            this.step4Next.UseVisualStyleBackColor = true;
+            this.step4Next.Click += new System.EventHandler(this.step4Done);
             // 
             // Form1
             // 
@@ -317,6 +330,7 @@
         private System.Windows.Forms.Label step3Label;
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.PictureBox marginPicture;
+        private System.Windows.Forms.Button step4Next;
     }
 }
 

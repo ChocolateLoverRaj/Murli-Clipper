@@ -169,54 +169,96 @@ namespace Murli_Clipper
             startStep4();
         }
 
-        private int leftMarginX = 0;
-        private int leftMarginXMin = 0;
-        private int leftMarginXMax;
-        private GraphicsPath graphicsPath = new GraphicsPath();
-        private System.Drawing.Point[] leftTabPoints;
-        private SolidBrush tabBrush = new SolidBrush(Color.Blue);
-        private Pen splitterPen = new Pen(Color.Blue);
-        private bool leftTabMouseDown = false;
-        private void startStep4() {
-            leftMarginXMax = marginPicture.Width / 4;
+        //Margin Tab
+        private GraphicsPath getMarginTab(int x)
+        {
+            GraphicsPath graphicsPath = new GraphicsPath();
+            System.Drawing.Point[] points = {
+                new System.Drawing.Point(x - 10, 0),
+                new System.Drawing.Point(x - 10, 10),
+                new System.Drawing.Point(x, 20),
+                new System.Drawing.Point(x + 10, 10),
+                new System.Drawing.Point(x + 10, 0)
+            };
+            graphicsPath.AddPolygon(points);
+            return graphicsPath;
         }
 
-        private void cropPaint(object sender, PaintEventArgs e)
+        private int leftMarginX;
+        private int leftMarginXMin;
+        private int leftMarginXMax;
+        private bool leftTabMouseDown = false;
+        private GraphicsPath leftTabPath = new GraphicsPath();
+
+        private int rightMarginX;
+        private int rightMarginXMin;
+        private int rightMarginXMax;
+        private bool rightTabMouseDown = false;
+        private GraphicsPath rightTabPath = new GraphicsPath();
+
+        private SolidBrush tabBrush = new SolidBrush(Color.Blue);
+        private SolidBrush grayBrush = new SolidBrush(Color.FromArgb(50, 100, 100, 100));
+        private Pen splitterPen = new Pen(Color.Blue);
+        
+        private void startStep4() {
+            leftMarginX = 0;
+            leftMarginXMin = 0;
+            leftMarginXMax = marginPicture.Width / 4;
+
+            rightMarginX = marginPicture.Width;
+            rightMarginXMin = marginPicture.Width - marginPicture.Width / 4;
+            rightMarginXMax = marginPicture.Width;
+        }
+
+        private void marginPaint(object sender, PaintEventArgs e)
         {
             Graphics g = e.Graphics;
+
+            //Left grayed out area
+            g.FillRectangle(grayBrush, new System.Drawing.Rectangle(0, 0, leftMarginX, marginPicture.Height));
             //Left tab
-            graphicsPath = new GraphicsPath();
-            leftTabPoints = new System.Drawing.Point[]{
-                new System.Drawing.Point(leftMarginX - 10, 0),
-                new System.Drawing.Point(leftMarginX - 10, 10),
-                new System.Drawing.Point(leftMarginX, 20),
-                new System.Drawing.Point(leftMarginX + 10, 10),
-                new System.Drawing.Point(leftMarginX + 10, 0)
-            };
-            graphicsPath.AddPolygon(leftTabPoints);
+            leftTabPath = getMarginTab(leftMarginX);
             //Left tab
-            g.FillPath(tabBrush, graphicsPath);
-            //Cutter Line
+            g.FillPath(tabBrush, leftTabPath);
+            //Left Cutter Line
             g.DrawLine(splitterPen, leftMarginX, 20, leftMarginX, marginPicture.Height);
+
+            //Left grayed out area
+            g.FillRectangle(grayBrush, new System.Drawing.Rectangle(rightMarginX, 0, marginPicture.Width - rightMarginX, marginPicture.Height));
+            //Right tab
+            rightTabPath = getMarginTab(rightMarginX);
+            //Right tab
+            g.FillPath(tabBrush, rightTabPath);
+            //Right Cutter Line
+            g.DrawLine(splitterPen, rightMarginX, 20, rightMarginX, marginPicture.Height);
         }
 
-        private void cropMouseDown(object sender, MouseEventArgs e)
+        private void marginMouseDown(object sender, MouseEventArgs e)
         {
-            if (graphicsPath.IsVisible(e.Location))
+            //Check if left tab is being clicked
+            if (leftTabPath.IsVisible(e.Location))
             {
                 leftTabMouseDown = true;
             }
+
+            //Check if right tab is being clicked
+            if (rightTabPath.IsVisible(e.Location))
+            {
+                rightTabMouseDown = true;
+            }
         }
 
-        private void cropMouseUp(object sender, MouseEventArgs e)
+        private void marginMouseUp(object sender, MouseEventArgs e)
         {
             leftTabMouseDown = false;
+
+            rightTabMouseDown = false;
         }
 
-        private void cropMouseMoved(object sender, MouseEventArgs e)
+        private void marginMouseMoved(object sender, MouseEventArgs e)
         {
             //Update cursor
-            if(graphicsPath.IsVisible(e.Location))
+            if(leftTabPath.IsVisible(e.Location) || rightTabPath.IsVisible(e.Location))
             {
                 marginPicture.Cursor = Cursors.Hand;
             }
@@ -224,7 +266,8 @@ namespace Murli_Clipper
             {
                 marginPicture.Cursor = Cursors.Default;
             }
-            //Check if position was changed and it is a valid position
+
+            //Check if left position was changed and it is a valid position
             if(leftTabMouseDown && e.X != leftMarginX)
             {
                 //Update position
@@ -242,8 +285,32 @@ namespace Murli_Clipper
                 }
                 //Redraw
                 marginPicture.Refresh();
-
             }
+
+            //Check if right position was changed and it is a valid position
+            if (rightTabMouseDown && e.X != rightMarginX)
+            {
+                //Update position
+                if (e.X < rightMarginXMin)
+                {
+                    rightMarginX = rightMarginXMin;
+                }
+                else if (e.X > rightMarginXMax)
+                {
+                    rightMarginX = rightMarginXMax;
+                }
+                else
+                {
+                    rightMarginX = e.X;
+                }
+                //Redraw
+                marginPicture.Refresh();
+            }
+        }
+
+        private void step4Done(object sender, EventArgs e)
+        {
+
         }
 
         /*Crop an image
