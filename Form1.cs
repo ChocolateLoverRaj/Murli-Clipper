@@ -27,6 +27,7 @@ namespace Murli_Clipper
     public partial class Form1 : System.Windows.Forms.Form
     {
         private string tempPath = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "./temp");
+        private string resPath = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "./res");
 
         public Form1()
         {
@@ -38,9 +39,6 @@ namespace Murli_Clipper
             {
                 File.Delete(files[i]);
             }
-
-            changeToTab(3);
-            startStep4();
         }
 
         //Change to a tab
@@ -184,6 +182,15 @@ namespace Murli_Clipper
             return graphicsPath;
         }
 
+        private System.Drawing.Image marginImage;
+        private float scale;
+
+        private int realHorizontalMargin; 
+        private int realVerticalMargin;
+
+        private int croppedImageX;
+        private int croppedImageWidth;
+
         private int leftMarginX;
         private int leftMarginXMin;
         private int leftMarginXMax;
@@ -199,15 +206,35 @@ namespace Murli_Clipper
         private SolidBrush tabBrush = new SolidBrush(Color.Blue);
         private SolidBrush grayBrush = new SolidBrush(Color.FromArgb(50, 100, 100, 100));
         private Pen splitterPen = new Pen(Color.Blue);
-        
-        private void startStep4() {
-            leftMarginX = 0;
-            leftMarginXMin = 0;
-            leftMarginXMax = marginPicture.Width / 4;
 
-            rightMarginX = marginPicture.Width;
-            rightMarginXMin = marginPicture.Width - marginPicture.Width / 4;
-            rightMarginXMax = marginPicture.Width;
+        private void startStep4()
+        {
+            marginImage = System.Drawing.Image.FromFile(System.IO.Path.Combine(resPath, "./margin.png"));
+
+            //Get the ratio of the display with to the image's width
+            if ((float)marginImage.Width / marginImage.Height > (float)marginPicture.Width / marginPicture.Height)
+            {
+                scale = (float)marginImage.Width / marginPicture.Width;
+            }
+            else
+            {
+                scale = (float)marginImage.Height / marginPicture.Height;
+            }
+
+            //Calculate the real margins
+            realHorizontalMargin = Convert.ToInt32((marginPicture.Width - marginImage.Width / scale) / 2);
+            realVerticalMargin = Convert.ToInt32((marginPicture.Height - marginImage.Height / scale) / 2);
+
+            leftMarginX = realHorizontalMargin;
+            leftMarginXMin = realHorizontalMargin;
+            leftMarginXMax = realHorizontalMargin + (marginPicture.Width - realHorizontalMargin * 2) / 4;
+
+            rightMarginX = marginPicture.Width - realHorizontalMargin;
+            rightMarginXMin = marginPicture.Width - realHorizontalMargin - (marginPicture.Width - realHorizontalMargin * 2) / 4;
+            rightMarginXMax = marginPicture.Width - realHorizontalMargin;
+
+            //Refresh
+            marginPicture.Refresh();
         }
 
         private void marginPaint(object sender, PaintEventArgs e)
@@ -258,7 +285,7 @@ namespace Murli_Clipper
         private void marginMouseMoved(object sender, MouseEventArgs e)
         {
             //Update cursor
-            if(leftTabPath.IsVisible(e.Location) || rightTabPath.IsVisible(e.Location))
+            if (leftTabPath.IsVisible(e.Location) || rightTabPath.IsVisible(e.Location))
             {
                 marginPicture.Cursor = Cursors.Hand;
             }
@@ -268,14 +295,14 @@ namespace Murli_Clipper
             }
 
             //Check if left position was changed and it is a valid position
-            if(leftTabMouseDown && e.X != leftMarginX)
+            if (leftTabMouseDown && e.X != leftMarginX)
             {
                 //Update position
-                if(e.X < leftMarginXMin)
+                if (e.X < leftMarginXMin)
                 {
                     leftMarginX = leftMarginXMin;
                 }
-                else if(e.X > leftMarginXMax)
+                else if (e.X > leftMarginXMax)
                 {
                     leftMarginX = leftMarginXMax;
                 }
@@ -310,7 +337,17 @@ namespace Murli_Clipper
 
         private void step4Done(object sender, EventArgs e)
         {
+            //Calculate image margin
+            croppedImageX = Convert.ToInt32((leftMarginX - realHorizontalMargin) * scale);
+            croppedImageWidth = Convert.ToInt32((rightMarginX - realHorizontalMargin) * scale) - croppedImageX;
 
+            //Test it out by cropping
+            const string dest = "C:/Users/rajas/Desktop/Test Murlis/iCropped.png";
+
+            Bitmap bmpImage = new Bitmap(marginImage);
+            Bitmap bmpCrop = bmpImage.Clone(new System.Drawing.Rectangle(croppedImageX, 0, croppedImageWidth, marginImage.Height), bmpImage.PixelFormat);
+
+            bmpCrop.Save(dest);
         }
 
         /*Crop an image

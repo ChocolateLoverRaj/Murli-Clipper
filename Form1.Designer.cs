@@ -45,10 +45,10 @@
             this.step3ProgressBar = new System.Windows.Forms.ProgressBar();
             this.label3 = new System.Windows.Forms.Label();
             this.step4 = new System.Windows.Forms.TabPage();
+            this.step4Next = new System.Windows.Forms.Button();
             this.marginPicture = new System.Windows.Forms.PictureBox();
             this.label4 = new System.Windows.Forms.Label();
             this.step5 = new System.Windows.Forms.TabPage();
-            this.step4Next = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.step1.SuspendLayout();
             this.step2.SuspendLayout();
@@ -239,9 +239,20 @@
             this.step4.Text = "Crop Sides";
             this.step4.UseVisualStyleBackColor = true;
             // 
+            // step4Next
+            // 
+            this.step4Next.Font = new System.Drawing.Font("Microsoft Sans Serif", 72F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.step4Next.Location = new System.Drawing.Point(10, 44);
+            this.step4Next.Name = "step4Next";
+            this.step4Next.Size = new System.Drawing.Size(488, 655);
+            this.step4Next.TabIndex = 2;
+            this.step4Next.Text = "Next";
+            this.step4Next.UseVisualStyleBackColor = true;
+            this.step4Next.Click += new System.EventHandler(this.step4Done);
+            // 
             // marginPicture
             // 
-            this.marginPicture.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.marginPicture.BackColor = System.Drawing.Color.DarkRed;
             this.marginPicture.Image = ((System.Drawing.Image)(resources.GetObject("marginPicture.Image")));
             this.marginPicture.Location = new System.Drawing.Point(504, 4);
             this.marginPicture.Name = "marginPicture";
@@ -274,17 +285,6 @@
             this.step5.TabIndex = 3;
             this.step5.Text = "Create PDF";
             this.step5.UseVisualStyleBackColor = true;
-            // 
-            // step4Next
-            // 
-            this.step4Next.Font = new System.Drawing.Font("Microsoft Sans Serif", 72F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.step4Next.Location = new System.Drawing.Point(10, 44);
-            this.step4Next.Name = "step4Next";
-            this.step4Next.Size = new System.Drawing.Size(488, 655);
-            this.step4Next.TabIndex = 2;
-            this.step4Next.Text = "Next";
-            this.step4Next.UseVisualStyleBackColor = true;
-            this.step4Next.Click += new System.EventHandler(this.step4Done);
             // 
             // Form1
             // 
