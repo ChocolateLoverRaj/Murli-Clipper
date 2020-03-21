@@ -26,6 +26,11 @@ namespace Murli_Clipper
 {
     public partial class Form1 : System.Windows.Forms.Form
     {
+        private bool isEven(int num)
+        {
+            return (num / 2) * 2 == num;
+        }
+
         private string tempPath = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "./temp");
         private string resPath = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "./res");
 
@@ -112,13 +117,19 @@ namespace Murli_Clipper
         private void step1Done(object sender, EventArgs e)
         {
             //Next tab
-            changeToTab(currentTab + 1);
+            changeToTab(1);
+        }
+
+        private void step2Back(object sender, EventArgs e)
+        {
+            //Previous tab
+            changeToTab(0);
         }
 
         private void step2Done(object sender, EventArgs e)
         {
             //Next tab
-            changeToTab(currentTab + 1);
+            changeToTab(2);
             //Update
             tabControl1.Update();
             //Start step 3
@@ -131,6 +142,8 @@ namespace Murli_Clipper
         private GhostscriptImageDeviceResolution resolution = new GhostscriptImageDeviceResolution(x_dpi, y_dpi);
         GhostscriptPngDevice device = new GhostscriptPngDevice(GhostscriptPngDeviceType.PngGray);
 
+        private System.Drawing.Image[] images = new System.Drawing.Image[14];
+
         private void startStep3()
         {
             device.GraphicsAlphaBits = GhostscriptImageDeviceAlphaBits.V_4;
@@ -139,28 +152,29 @@ namespace Murli_Clipper
             device.InputFiles.Add(srcPath.Text);
             device.CustomSwitches.Add("-dDOINTERPOLATE");
 
+            int[] pageOrder = { 1, 3, 4, 6, 7, 9, 10, 12, 13, 15, 16, 18, 19, 21 };
             int photosSaved = 0;
-            for (int i = 0; i < 7; i++)
+            while (photosSaved < 14)
             {
-                for (int j = 0; j < 2; j++)
-                {
-                    //Get photo
-                    device.OutputPath = System.IO.Path.Combine(tempPath, "./" + i + (j == 0 ? "A" : "B") + ".png");
-                    device.Pdf.FirstPage = i * 3 + j * 2 + 1;
-                    device.Pdf.LastPage = i * 3 + j * 2 + 1;
-                    device.Process();
+                //Get photo
+                device.OutputPath = System.IO.Path.Combine(tempPath, "./" + photosSaved + ".png");
+                device.Pdf.FirstPage = pageOrder[photosSaved];
+                device.Pdf.LastPage = pageOrder[photosSaved];
+                device.Process();
 
-                    //Update display
-                    photosSaved++;
-                    step3ProgressBar.Value = photosSaved;
-                    step3Label.Text = photosSaved + " out of 14 images generated.";
-                    step3ProgressBar.Update();
-                    step3Label.Update();
-                }
+                //Get image from file system
+                images[photosSaved] = System.Drawing.Image.FromFile(device.OutputPath);
+
+                //Update display
+                photosSaved++;
+                step3ProgressBar.Value = photosSaved;
+                step3Label.Text = photosSaved + " out of 14 images generated.";
+                step3ProgressBar.Update();
+                step3Label.Update();
             }
 
             //Next tab
-            changeToTab(currentTab + 1);
+            changeToTab(3);
             //Update
             tabControl1.Update();
             //Start step 4
@@ -168,28 +182,54 @@ namespace Murli_Clipper
         }
 
         //Margin Tab
-        private GraphicsPath getMarginTab(int x)
+        private enum CropTab
+        {
+            Top = 0,
+            Right = 1
+        }
+        private GraphicsPath getMarginTab(int position, CropTab cropTab)
         {
             GraphicsPath graphicsPath = new GraphicsPath();
-            System.Drawing.Point[] points = {
-                new System.Drawing.Point(x - 10, 0),
-                new System.Drawing.Point(x - 10, 10),
-                new System.Drawing.Point(x, 20),
-                new System.Drawing.Point(x + 10, 10),
-                new System.Drawing.Point(x + 10, 0)
-            };
+            System.Drawing.Point[] points = new System.Drawing.Point[5];
+            if (cropTab == CropTab.Top)
+            {
+                points = new System.Drawing.Point[]{
+                    new System.Drawing.Point(position - 10, 0),
+                    new System.Drawing.Point(position - 10, 10),
+                    new System.Drawing.Point(position, 20),
+                    new System.Drawing.Point(position + 10, 10),
+                    new System.Drawing.Point(position + 10, 0)
+                };
+            }
+            else
+            {
+                points = new System.Drawing.Point[]{
+                    new System.Drawing.Point(cropPicture.Width, position - 10),
+                    new System.Drawing.Point(cropPicture.Width - 10, position - 10),
+                    new System.Drawing.Point(cropPicture.Width - 20, position),
+                    new System.Drawing.Point(cropPicture.Width - 10, position + 10),
+                    new System.Drawing.Point(cropPicture.Width, position + 10)
+                };
+            }
             graphicsPath.AddPolygon(points);
             return graphicsPath;
         }
 
-        private System.Drawing.Image marginImage;
+        private bool horizontalMarginUnlocked = true;
+
+        private System.Drawing.Image cropImage;
         private float scale;
 
-        private int realHorizontalMargin; 
+        private int realHorizontalMargin;
         private int realVerticalMargin;
 
         private int croppedImageX;
         private int croppedImageWidth;
+
+        private int currentPage = 0;
+
+        private int[] croppedImageYs = new int[14];
+        private int[] croppedImageHeights = new int[14];
 
         private int leftMarginX;
         private int leftMarginXMin;
@@ -203,95 +243,185 @@ namespace Murli_Clipper
         private bool rightTabMouseDown = false;
         private GraphicsPath rightTabPath = new GraphicsPath();
 
+        private int[] topMarginYs = new int[14];
+        private int[] bottomMarginYs = new int[14];
+
+        private int topMarginY;
+        private int topMarginYMin;
+        private int topMarginYMax;
+        private bool topTabMouseDown = false;
+        private GraphicsPath topTabPath = new GraphicsPath();
+
+        private int bottomMarginY;
+        private int bottomMarginYMin;
+        private int bottomMarginYMax;
+        private bool bottomTabMouseDown = false;
+        private GraphicsPath bottomTabPath = new GraphicsPath();
+
         private SolidBrush tabBrush = new SolidBrush(Color.Blue);
         private SolidBrush grayBrush = new SolidBrush(Color.FromArgb(50, 100, 100, 100));
         private Pen splitterPen = new Pen(Color.Blue);
 
         private void startStep4()
         {
-            marginImage = System.Drawing.Image.FromFile(System.IO.Path.Combine(resPath, "./margin.png"));
+            //Get the first page image
+            cropImage = images[0];
+
+            //Set the image
+            cropPicture.Image = cropImage;
 
             //Get the ratio of the display with to the image's width
-            if ((float)marginImage.Width / marginImage.Height > (float)marginPicture.Width / marginPicture.Height)
+            if ((float)cropImage.Width / cropImage.Height > (float)cropPicture.Width / cropPicture.Height)
             {
-                scale = (float)marginImage.Width / marginPicture.Width;
+                scale = (float)cropImage.Width / cropPicture.Width;
             }
             else
             {
-                scale = (float)marginImage.Height / marginPicture.Height;
+                scale = (float)cropImage.Height / cropPicture.Height;
             }
 
             //Calculate the real margins
-            realHorizontalMargin = Convert.ToInt32((marginPicture.Width - marginImage.Width / scale) / 2);
-            realVerticalMargin = Convert.ToInt32((marginPicture.Height - marginImage.Height / scale) / 2);
+            realHorizontalMargin = Convert.ToInt32((cropPicture.Width - cropImage.Width / scale) / 2);
+            realVerticalMargin = Convert.ToInt32((cropPicture.Height - cropImage.Height / scale) / 2);
 
             leftMarginX = realHorizontalMargin;
             leftMarginXMin = realHorizontalMargin;
-            leftMarginXMax = realHorizontalMargin + (marginPicture.Width - realHorizontalMargin * 2) / 4;
+            leftMarginXMax = realHorizontalMargin + (cropPicture.Width - realHorizontalMargin * 2) / 4;
 
-            rightMarginX = marginPicture.Width - realHorizontalMargin;
-            rightMarginXMin = marginPicture.Width - realHorizontalMargin - (marginPicture.Width - realHorizontalMargin * 2) / 4;
-            rightMarginXMax = marginPicture.Width - realHorizontalMargin;
+            rightMarginX = cropPicture.Width - realHorizontalMargin;
+            rightMarginXMin = cropPicture.Width - realHorizontalMargin - (cropPicture.Width - realHorizontalMargin * 2) / 4;
+            rightMarginXMax = cropPicture.Width - realHorizontalMargin;
+
+            topMarginY = realVerticalMargin;
+            topMarginYMin = realVerticalMargin;
+            topMarginYMax = cropPicture.Height - realVerticalMargin;
+
+            bottomMarginY = cropPicture.Height - realVerticalMargin;
+            bottomMarginYMin = realVerticalMargin;
+            bottomMarginYMax = cropPicture.Height - realVerticalMargin;
 
             //Refresh
-            marginPicture.Refresh();
+            cropPicture.Refresh();
         }
 
-        private void marginPaint(object sender, PaintEventArgs e)
+        private void cropPaint(object sender, PaintEventArgs e)
         {
             Graphics g = e.Graphics;
 
             //Left grayed out area
-            g.FillRectangle(grayBrush, new System.Drawing.Rectangle(0, 0, leftMarginX, marginPicture.Height));
+            g.FillRectangle(grayBrush, new System.Drawing.Rectangle(0, 0, leftMarginX, cropPicture.Height));
             //Left tab
-            leftTabPath = getMarginTab(leftMarginX);
+            leftTabPath = getMarginTab(leftMarginX, CropTab.Top);
             //Left tab
             g.FillPath(tabBrush, leftTabPath);
             //Left Cutter Line
-            g.DrawLine(splitterPen, leftMarginX, 20, leftMarginX, marginPicture.Height);
+            g.DrawLine(splitterPen, leftMarginX, 20, leftMarginX, cropPicture.Height);
 
-            //Left grayed out area
-            g.FillRectangle(grayBrush, new System.Drawing.Rectangle(rightMarginX, 0, marginPicture.Width - rightMarginX, marginPicture.Height));
+            //Right grayed out area
+            g.FillRectangle(grayBrush, new System.Drawing.Rectangle(rightMarginX, 0, cropPicture.Width - rightMarginX, cropPicture.Height));
             //Right tab
-            rightTabPath = getMarginTab(rightMarginX);
+            rightTabPath = getMarginTab(rightMarginX, CropTab.Top);
             //Right tab
             g.FillPath(tabBrush, rightTabPath);
             //Right Cutter Line
-            g.DrawLine(splitterPen, rightMarginX, 20, rightMarginX, marginPicture.Height);
+            g.DrawLine(splitterPen, rightMarginX, 20, rightMarginX, cropPicture.Height);
+
+            if (!horizontalMarginUnlocked)
+            {
+                //Top grayed out area
+                g.FillRectangle(grayBrush, new System.Drawing.Rectangle(leftMarginX, 0, rightMarginX - leftMarginX, topMarginY));
+                //Top tab
+                topTabPath = getMarginTab(topMarginY, CropTab.Right);
+                //Top tab
+                g.FillPath(tabBrush, topTabPath);
+                //Top Cutter Line
+                g.DrawLine(splitterPen, 0, topMarginY, cropPicture.Width - 20, topMarginY);
+
+                //Bottom grayed out area
+                g.FillRectangle(grayBrush, new System.Drawing.Rectangle(leftMarginX, bottomMarginY, rightMarginX - leftMarginX, cropPicture.Height - bottomMarginY));
+                //Bottom tab
+                bottomTabPath = getMarginTab(bottomMarginY, CropTab.Right);
+                //Bottom tab
+                g.FillPath(tabBrush, bottomTabPath);
+                //Bottom Cutter Line
+                g.DrawLine(splitterPen, 0, bottomMarginY, cropPicture.Width - 20, bottomMarginY);
+            }
         }
 
-        private void marginMouseDown(object sender, MouseEventArgs e)
+        private void cropMouseDown(object sender, MouseEventArgs e)
         {
-            //Check if left tab is being clicked
-            if (leftTabPath.IsVisible(e.Location))
+            if (horizontalMarginUnlocked)
             {
-                leftTabMouseDown = true;
+                //Check if left tab is being clicked
+                if (leftTabPath.IsVisible(e.Location))
+                {
+                    leftTabMouseDown = true;
+                }
+
+                //Check if right tab is being clicked
+                if (rightTabPath.IsVisible(e.Location))
+                {
+                    rightTabMouseDown = true;
+                }
+            }
+            //Check if top tab is being clicked
+            if (topTabPath.IsVisible(e.Location))
+            {
+                topTabMouseDown = true;
             }
 
-            //Check if right tab is being clicked
-            if (rightTabPath.IsVisible(e.Location))
+            //Check if bottom tab is being clicked
+            if (bottomTabPath.IsVisible(e.Location))
             {
-                rightTabMouseDown = true;
+                bottomTabMouseDown = true;
             }
         }
 
-        private void marginMouseUp(object sender, MouseEventArgs e)
+        private void cropMouseUp(object sender, MouseEventArgs e)
         {
+            if (leftTabMouseDown || rightTabMouseDown)
+            {
+                //Calculate image x and width
+                croppedImageX = Convert.ToInt32((leftMarginX - realHorizontalMargin) * scale);
+                croppedImageWidth = Convert.ToInt32((rightMarginX - realHorizontalMargin) * scale) - croppedImageX;
+            }
             leftTabMouseDown = false;
-
             rightTabMouseDown = false;
+            if (topTabMouseDown || bottomTabMouseDown)
+            {
+                //Calculate image y and height
+                croppedImageYs[currentPage] = Convert.ToInt32((topMarginY - realVerticalMargin) * scale);
+                croppedImageHeights[currentPage] = Convert.ToInt32((bottomMarginY - realVerticalMargin) * scale) - croppedImageYs[currentPage];
+
+                //Store the ui y positions
+                topMarginYs[currentPage] = topMarginY;
+                bottomMarginYs[currentPage] = bottomMarginY;
+            }
+            topTabMouseDown = false;
+            bottomTabMouseDown = false;
         }
 
-        private void marginMouseMoved(object sender, MouseEventArgs e)
+        private void cropMouseMoved(object sender, MouseEventArgs e)
         {
             //Update cursor
             if (leftTabPath.IsVisible(e.Location) || rightTabPath.IsVisible(e.Location))
             {
-                marginPicture.Cursor = Cursors.Hand;
+                if (horizontalMarginUnlocked)
+                {
+                    cropPicture.Cursor = Cursors.Hand;
+                }
+                else
+                {
+                    cropPicture.Cursor = Cursors.No;
+                }
+            }
+            else if (topTabPath.IsVisible(e.Location) || bottomTabPath.IsVisible(e.Location))
+            {
+                cropPicture.Cursor = Cursors.Hand;
             }
             else
             {
-                marginPicture.Cursor = Cursors.Default;
+                cropPicture.Cursor = Cursors.Default;
             }
 
             //Check if left position was changed and it is a valid position
@@ -311,7 +441,7 @@ namespace Murli_Clipper
                     leftMarginX = e.X;
                 }
                 //Redraw
-                marginPicture.Refresh();
+                cropPicture.Refresh();
             }
 
             //Check if right position was changed and it is a valid position
@@ -331,23 +461,201 @@ namespace Murli_Clipper
                     rightMarginX = e.X;
                 }
                 //Redraw
-                marginPicture.Refresh();
+                cropPicture.Refresh();
+            }
+
+            //Check if top position was changed and it is a valid position
+            if (topTabMouseDown && e.Y != topMarginY)
+            {
+                //Update position
+                if (e.Y < topMarginYMin)
+                {
+                    topMarginY = topMarginYMin;
+                }
+                else if (bottomMarginY - e.Y < 20)
+                {
+                    topMarginY = bottomMarginY - 20;
+                }
+                else
+                {
+                    topMarginY = e.Y;
+                }
+                //Redraw
+                cropPicture.Refresh();
+            }
+
+            //Check if bottom position was changed and it is a valid position
+            if (bottomTabMouseDown && e.Y != bottomMarginY)
+            {
+                //Update position
+                if (e.Y - topMarginY < 20)
+                {
+                    bottomMarginY = topMarginY + 20;
+                }
+                else if (e.Y > bottomMarginYMax)
+                {
+                    bottomMarginY = bottomMarginYMax;
+                }
+                else
+                {
+                    bottomMarginY = e.Y;
+                }
+                //Redraw
+                cropPicture.Refresh();
             }
         }
 
-        private void step4Done(object sender, EventArgs e)
+        private void updateCropDisplay()
         {
-            //Calculate image margin
-            croppedImageX = Convert.ToInt32((leftMarginX - realHorizontalMargin) * scale);
-            croppedImageWidth = Convert.ToInt32((rightMarginX - realHorizontalMargin) * scale) - croppedImageX;
+            if (horizontalMarginUnlocked)
+            {
+                cropLabel.Text = "Choose Horizontal Margins";
+                cropPicture.Refresh();
+            }
+            else if (currentPage < 14)
+            {
+                //Check if the vertical margins for this page have already been selected
+                if (bottomMarginYs[currentPage] != 0)
+                {
+                    topMarginY = topMarginYs[currentPage];
+                    bottomMarginY = bottomMarginYs[currentPage];
+                }
+                //Adjust the top and bottom marginYs based on current page
+                else if (isEven(currentPage))
+                {
+                    topMarginY = topMarginYMin;
+                    bottomMarginY = cropPicture.Height / 2;
+                }
+                else
+                {
+                    topMarginY = cropPicture.Height / 2;
+                    bottomMarginY = bottomMarginYMax;
+                }
+                //Set new image
+                cropPicture.Image = images[currentPage];
+                //Update label
+                cropLabel.Text = "Crop Page " + (currentPage + 1);
+            }
+            else
+            {
+                currentPage = 13;
 
-            //Test it out by cropping
-            const string dest = "C:/Users/rajas/Desktop/Test Murlis/iCropped.png";
+                changeToTab(4);
+            }
+        }
 
-            Bitmap bmpImage = new Bitmap(marginImage);
-            Bitmap bmpCrop = bmpImage.Clone(new System.Drawing.Rectangle(croppedImageX, 0, croppedImageWidth, marginImage.Height), bmpImage.PixelFormat);
+        private void nextImage(object sender, EventArgs e)
+        {
+            //If currently choosing horizontal margin
+            if (horizontalMarginUnlocked)
+            {
+                horizontalMarginUnlocked = false;
+            }
+            else
+            {
+                currentPage++;
+            }
+            //Update display
+            updateCropDisplay();
+        }
 
-            bmpCrop.Save(dest);
+        private void step4Back(object sender, EventArgs e)
+        {
+            //Back to a cropping step
+            if (currentPage > 0)
+            {
+                currentPage--;
+                updateCropDisplay();
+            }
+            //Back to choosing horizontal margins
+            else if (currentPage == 0 && !horizontalMarginUnlocked)
+            {
+                horizontalMarginUnlocked = true;
+                topTabPath = new GraphicsPath();
+                bottomTabPath = new GraphicsPath();
+                updateCropDisplay();
+            }
+            //Back to choosing a date
+            else
+            {
+                images = new System.Drawing.Image[14];
+                changeToTab(1);
+            }
+        }
+
+        //Dest dialog
+        private FolderBrowserDialog destDialog = new FolderBrowserDialog();
+        //The export file name
+        private string destFileName;
+        private DateTime startDate;
+        private DateTime endDate;
+
+        private void validateDestPath()
+        {
+            //Check if file exists
+            if (Directory.Exists(destPath.Text))
+            {
+                destValidity.Text = "Folder Is Valid";
+                destValidity.ForeColor = Color.Green;
+                createButton.Enabled = true;
+            }
+            else
+            {
+                destValidity.Text = "Folder Doesn't Exist";
+                destValidity.ForeColor = Color.Red;
+                createButton.Enabled = false;
+            }
+        }
+
+        private void destDialogClicked(object sender, EventArgs e)
+        {
+            if (destDialog.ShowDialog() == DialogResult.OK)
+            {
+                destPath.Text = destDialog.SelectedPath;
+                validateDestPath();
+            }
+        }
+
+        private void destPathChanged(object sender, EventArgs e)
+        {
+            validateDestPath();
+        }
+
+        private void step5Back(object sender, EventArgs e)
+        {
+            changeToTab(3);
+        }
+
+        private void createClicked(object sender, EventArgs e)
+        {
+            //Figure out the file name
+            startDate = dateTimePicker1.Value;
+            endDate = startDate.AddDays(7);
+            destFileName = destPath + "/";
+
+            destFileName += startDate.ToString("yyyy MMMM d");
+            destFileName += " - ";
+            if (endDate.Year != startDate.Year) destFileName += endDate.ToString("yyyy") + " ";
+            if (endDate.Month != startDate.Month) destFileName += endDate.ToString("MMMM") + " ";
+            destFileName += endDate.Day;
+            destFileName += ".pdf";
+
+            createButton.Text = "Creating...";
+            Debug.WriteLine("Creating the pdf");
+            openButton.Enabled = true;
+            closeButton.Enabled = true;
+            MessageBox.Show("PDF Successfully Created");
+            createButton.Text = "Create";
+        }
+
+        private void openClicked(object sender, EventArgs e)
+        {
+            Process.Start(destFileName);
+        }
+
+        private void closeClicked(object sender, EventArgs e)
+        {
+            this.Close();
         }
 
         /*Crop an image
