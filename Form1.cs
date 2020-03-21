@@ -1,25 +1,14 @@
 ﻿using System;
 using System.IO;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Diagnostics;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 using iText.Kernel.Pdf;
-using iText.Layout;
-using iText.Layout.Element;
 using iText.Kernel.Geom;
 using iText.IO.Image;
 using iText.Kernel.Pdf.Canvas;
-
-using Ghostscript.NET.Rasterizer;
 using Ghostscript.NET;
-using System.Drawing.Imaging;
 using System.Drawing.Drawing2D;
 
 namespace Murli_Clipper
@@ -301,6 +290,7 @@ namespace Murli_Clipper
             bottomMarginYMax = cropPicture.Height - realVerticalMargin;
 
             //Refresh
+            calculateWidth();
             cropPicture.Refresh();
         }
 
@@ -377,25 +367,37 @@ namespace Murli_Clipper
             }
         }
 
+        private void calculateWidth()
+        {
+            //Calculate image x and width
+            croppedImageX = Convert.ToInt32((leftMarginX - realHorizontalMargin) * scale);
+            croppedImageWidth = Convert.ToInt32((rightMarginX - realHorizontalMargin) * scale) - croppedImageX;
+        }
+
+        private void calculateHeight()
+        {
+            //Calculate image y and height
+            croppedImageYs[currentPage] = Convert.ToInt32((topMarginY - realVerticalMargin) * scale);
+            croppedImageHeights[currentPage] = Convert.ToInt32((bottomMarginY - realVerticalMargin) * scale) - croppedImageYs[currentPage];
+
+            //Store the ui y positions
+            topMarginYs[currentPage] = topMarginY;
+            bottomMarginYs[currentPage] = bottomMarginY;
+        }
+
         private void cropMouseUp(object sender, MouseEventArgs e)
         {
             if (leftTabMouseDown || rightTabMouseDown)
             {
                 //Calculate image x and width
-                croppedImageX = Convert.ToInt32((leftMarginX - realHorizontalMargin) * scale);
-                croppedImageWidth = Convert.ToInt32((rightMarginX - realHorizontalMargin) * scale) - croppedImageX;
+                calculateWidth();
             }
             leftTabMouseDown = false;
             rightTabMouseDown = false;
             if (topTabMouseDown || bottomTabMouseDown)
             {
                 //Calculate image y and height
-                croppedImageYs[currentPage] = Convert.ToInt32((topMarginY - realVerticalMargin) * scale);
-                croppedImageHeights[currentPage] = Convert.ToInt32((bottomMarginY - realVerticalMargin) * scale) - croppedImageYs[currentPage];
-
-                //Store the ui y positions
-                topMarginYs[currentPage] = topMarginY;
-                bottomMarginYs[currentPage] = bottomMarginY;
+                calculateHeight();
             }
             topTabMouseDown = false;
             bottomTabMouseDown = false;
@@ -510,6 +512,7 @@ namespace Murli_Clipper
             if (horizontalMarginUnlocked)
             {
                 cropLabel.Text = "Choose Horizontal Margins";
+                calculateWidth();
                 cropPicture.Refresh();
             }
             else if (currentPage < 14)
@@ -521,15 +524,20 @@ namespace Murli_Clipper
                     bottomMarginY = bottomMarginYs[currentPage];
                 }
                 //Adjust the top and bottom marginYs based on current page
-                else if (isEven(currentPage))
-                {
-                    topMarginY = topMarginYMin;
-                    bottomMarginY = cropPicture.Height / 2;
-                }
                 else
                 {
-                    topMarginY = cropPicture.Height / 2;
-                    bottomMarginY = bottomMarginYMax;
+                    if (isEven(currentPage))
+                    {
+                        topMarginY = topMarginYMin;
+                        bottomMarginY = cropPicture.Height / 2;
+                    }
+                    else
+                    {
+                        topMarginY = cropPicture.Height / 2;
+                        bottomMarginY = bottomMarginYMax;
+                    }
+                    //Calculate the height
+                    calculateHeight();
                 }
                 //Set new image
                 cropPicture.Image = images[currentPage];
@@ -575,11 +583,10 @@ namespace Murli_Clipper
                 bottomTabPath = new GraphicsPath();
                 updateCropDisplay();
             }
-            //Back to choosing a date
+            //Restart the application
             else
             {
-                images = new System.Drawing.Image[14];
-                changeToTab(1);
+                Application.Restart();
             }
         }
 
@@ -589,6 +596,20 @@ namespace Murli_Clipper
         private string destFileName;
         private DateTime startDate;
         private DateTime endDate;
+        //Pdf stuff
+        private Bitmap croppedImage;
+        private ImageConverter imageConverter = new ImageConverter();
+        private System.Drawing.Rectangle cropRectangle;
+        private ImageData[] imageDatas = new ImageData[14];
+        private PdfWriter writer;
+        private PdfDocument pdf;
+        private PdfPage page;
+        private PdfCanvas canvas;
+        private int togetherHeight;
+        private float pageImageHeightRatio;
+        private float pageImageWidthRatio;
+        private float smallerRatio;
+        private float bottomSpace;
 
         private void validateDestPath()
         {
@@ -631,17 +652,58 @@ namespace Murli_Clipper
             //Figure out the file name
             startDate = dateTimePicker1.Value;
             endDate = startDate.AddDays(7);
-            destFileName = destPath + "/";
 
+            destFileName = destPath.Text + "/";
             destFileName += startDate.ToString("yyyy MMMM d");
             destFileName += " - ";
             if (endDate.Year != startDate.Year) destFileName += endDate.ToString("yyyy") + " ";
             if (endDate.Month != startDate.Month) destFileName += endDate.ToString("MMMM") + " ";
             destFileName += endDate.Day;
+            destFileName += " Murlis";
             destFileName += ".pdf";
 
             createButton.Text = "Creating...";
-            Debug.WriteLine("Creating the pdf");
+            createButton.Refresh();
+
+            //Create the pdf
+            writer = new PdfWriter(destFileName);
+            pdf = new PdfDocument(writer);
+            //Loop through each day
+            for(int i = 0; i < 14; i += 2)
+            {
+                //Reset togetherHeight
+                togetherHeight = 0;
+                //Crop the images
+                for(int j = 0; j < 2; j++)
+                {
+                    //Rectangle for part of image we want
+                    cropRectangle = new System.Drawing.Rectangle(croppedImageX, croppedImageYs[i + j], croppedImageWidth, croppedImageHeights[i + j]);
+                    //Get bitmap from already gotten image
+                    croppedImage = new Bitmap(images[i + j]);
+                    //Crop the image
+                    croppedImage = croppedImage.Clone(cropRectangle, croppedImage.PixelFormat);
+                    //Add the height onto the togetherHeight
+                    togetherHeight += croppedImage.Height;
+                    //Convert to ImageData
+                    imageDatas[i + j] = ImageDataFactory.Create((byte[])imageConverter.ConvertTo(croppedImage, typeof(byte[])));
+                }
+                //Add a  page and canvas to the pdf
+                page = pdf.AddNewPage(PageSize.A4.Rotate());
+                canvas = new PdfCanvas(page);
+                //Calculate ratios
+                pageImageWidthRatio = page.GetPageSize().GetWidth() / croppedImage.Width;
+                pageImageHeightRatio = page.GetPageSize().GetHeight() / togetherHeight;
+                smallerRatio = Math.Min(pageImageWidthRatio, pageImageHeightRatio);
+                bottomSpace = page.GetPageSize().GetHeight() - togetherHeight * smallerRatio;
+                //Set transform
+                canvas.ConcatMatrix(AffineTransform.GetScaleInstance(smallerRatio, smallerRatio));
+                //Add the images onto the canvas
+                canvas.AddImage(imageDatas[i], 0, imageDatas[i + 1].GetHeight() + bottomSpace, true);
+                canvas.AddImage(imageDatas[i + 1], 0, bottomSpace, true);
+            }
+            //Save the pdf
+            pdf.Close();
+
             openButton.Enabled = true;
             closeButton.Enabled = true;
             MessageBox.Show("PDF Successfully Created");
