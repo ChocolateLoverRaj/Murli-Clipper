@@ -1,0 +1,1 @@
+This is a program that I made for my grandma to do some specific PDF editing. It renders the PDF as a high resolution image and then crops it, with sliders to adjust cropping. Then it creates a new PDF. It's not that useful anymore.
